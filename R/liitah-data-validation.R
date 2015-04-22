@@ -1,0 +1,150 @@
+## FUNCTION: Return complete summary with one row per participant
+#' @export
+full_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
+                         filterEnd = '2016-04-11T23:59:59Z') {
+  basic <- basic_summary(pt)
+  arrivals <- arrival_table(pt)
+  arrivals <- subset(arrivals, select = -c(pt))
+  ret <- cbind(basic, arrivals)
+  ret
+}
+
+## FUNCTION: Quantify arrivals
+## For each arrival, report time since warm and time since cold
+#' @export
+arrival_summary <- function(pt) {
+  log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
+                   query_params = list(participant = pt))
+  # Only include pollings with a category
+  log <- log[!is.na(log$args.category),]
+  log <- log[log$args.category != "",]
+  ret <- data.frame(venue = character(), 
+                    arrival_time = as.Date(character()),
+                    last_cat = character())
+  # Loop through all, find each time you enter 'at_venue'
+  i <- 1
+  polled_at_venue = FALSE
+  while (i <= nrow(log)) {
+    # Find initial instance of at_venue
+    if (log$args.category[i] == "at_venue" && !is.na(log$args.category[i])) {
+      # Find time since last reported as hot,warm,cold
+      j <- i - 1
+      while ((is.na(log$args.category[j]) || log$args.category[j] == "") && j > 1)
+        j <- j - 1
+      prev_cat <- log$args.category[j]
+      if (j <= 1) prev_cat <- "first"
+      temp <- data.frame(venue = log$args.nearest_venue[i], 
+                         arrival_time = log$local_time[i], 
+                         last_cat = prev_cat) 
+      ret <- rbind(ret, temp)
+      # Loop through current set of 'at_venue' polls
+      while (log$args.category[i] == "at_venue" && i <= nrow(log)
+             && !is.na(log$args.category[i])) i <- i + 1
+    }
+    i <- i + 1
+  }
+  ret
+}
+
+## FUNCTION: Return percentages of arrival_summary
+#' @export
+arrival_table <- function(pt) {
+  # For each participant entered summarize arrivals
+  for (i in 1:length(pt)) {
+    arrivals <- arrival_summary(pt[i])
+    totals <- as.data.frame(table(arrivals$last_cat))
+    from_hot <- as.numeric(totals[totals$Var1 == "hot",][2])
+    from_warm <- as.numeric(totals[totals$Var1 == "warm",][2])
+    from_cold <- as.numeric(totals[totals$Var1 == "cold",][2])
+    if (is.na(from_hot)) from_hot <- 0
+    if (is.na(from_warm)) from_warm <- 0
+    if (is.na(from_cold)) from_cold <- 0
+    temp <- data.frame(pt = pt[i], Arrivals_From_Hot = from_hot,
+                       Arrivals_From_Warm = from_warm,
+                       Arrivals_From_Cold = from_cold)
+    if (i == 1) ret <- temp
+    else ret <- rbind(ret, temp)
+  }
+  ret
+}
+
+## FUNCTION: Basic summary stats
+#' @export
+basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
+                          filterEnd = '2016-04-11T23:59:59Z') {
+  for (i in 1:length(pt)) {
+    # Read in data
+    log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
+                     query_params = list(participant = pt[i]))
+    venues <- read_pilr(data_set = "pilrhealth:liitah:personal_venue", schema = "1", 
+                        query_params = list(participant = pt[i]))
+    training_recs <- read_pilr(data_set = "pilrhealth:liitah:personal_venue_training_record", schema = "1", 
+                               query_params = list(participant = pt[i]))
+    filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
+    venues$local_time = venues$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    training_recs$local_time = training_recs$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    training_recs = training_recs[training_recs$local_time > filterStart & training_recs$local_time < filterEnd, ]
+    # ==== Summarize data ====
+    # Query data for some summary measures
+    polls = log[log$tag == "POLLING_SERVICE_ANDROID", ]
+    polls_at_location = polls[polls$args.category == "at_venue", ]
+    triggers = log[log$tag == 'ARRIVAL_TRIGGER',]
+    
+    # Table of the summary measures
+    temp <- data.frame(pt = pt[i], 
+                       Total_Venues = nrow(venues), 
+                       Total_Polls = nrow(polls),
+                       Total_Triggers = nrow(triggers), Polls_at_Venue = nrow(polls_at_location),
+                       Hot_Polls = polls[polls$args.category == "hot", ] %>% nrow(),
+                       Warm_Polls = polls[polls$args.category == "warm", ] %>% nrow(),
+                       Cold_Polls = polls[polls$args.category == "cold", ] %>% nrow(),
+                       Last_Venue_Added = max(venues$local_time) %>% as.character(),
+                       Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
+                       Last_Poll = max(log$local_time) %>% as.character(),
+                       First_Poll = min(log$local_time) %>% as.character())
+    if (i == 1) ret <- temp
+    else ret <- rbind(ret, temp)
+  }
+  ret
+}
+
+## FUNCTION: Comparing locations in venues to training recs
+#' @export
+venue_diff <- function(pt) {
+  # Read in data from PiLR API
+  venues <- read_pilr(data_set = "pilrhealth:liitah:personal_venue", schema = "1", 
+                      query_params = list(participant = pt))
+  training <- read_pilr(data_set = "pilrhealth:liitah:personal_venue_training_record", schema = "1", 
+                        query_params = list(participant = pt))
+  # Format and merge data frame. Keep track of first location entry.
+  venues <- rename(venues, c("id" = "venue_id", "trig_info.lon" = "lon", "trig_info.lat" = "lat"))
+  training <- rename(training, c("info.lon" = "lon", "info.lat" = "lat"))
+  # Merge venues with training records
+  venues <- subset(venues, select=c(timestamp, pt, venue_id, lon, lat))
+  training <- subset(training, select=c(timestamp, pt, venue_id, lon, lat))
+  # For each venue, find max/min/mean distance from matching training id's
+  ret <- data.frame(venue_id = character(), count = numeric(), 
+                    mean = numeric(), min = numeric(), max = numeric())
+  message("Distance in meters from original venue")
+  for (venue in venues$venue_id) {
+    training_sub <- training[training$venue_id == venue,]
+    venues_sub <- venues[venues$venue_id == venue,]
+    message(paste0("Venue ID: ", venue))
+    distlist <- numeric()
+    if (nrow(training_sub)) {
+      for (i in 1:nrow(training_sub)) {
+        dist <- distCosine(c(as.numeric(venues_sub$lon[1]), as.numeric(venues_sub$lat[1])), 
+                           c(as.numeric(training_sub$lon[i]), as.numeric(training_sub$lat[i])))
+        distlist <- append(distlist, dist)
+        message(dist)
+      }
+      temp <- data.frame(venue_id = venue, count = length(distlist), 
+                         mean = mean(distlist), min = min(distlist), max = max(distlist))
+      ret <- rbind(ret, temp)
+    }
+    ret
+  }
+}

@@ -1,0 +1,9 @@
+Package: pilr.liitah.r
+Type: Package
+Title: Accessing and validating data from the Liitah mobile app
+Version: 1.0
+Date: 2015-04-16
+Author: Tyler Schenk (tschenk@meinergy.com)
+Description: Accessing and validating data from the Liitah mobile app
+License: MEI Research, Ltd.
+Imports: pilr.api.r, httr, jsonlite, plyr, dplyr
