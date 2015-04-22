@@ -59,9 +59,9 @@ arrival_table <- function(pt) {
     if (is.na(from_hot)) from_hot <- 0
     if (is.na(from_warm)) from_warm <- 0
     if (is.na(from_cold)) from_cold <- 0
-    temp <- data.frame(pt = pt[i], Arrivals_From_Hot = from_hot,
-                       Arrivals_From_Warm = from_warm,
-                       Arrivals_From_Cold = from_cold)
+    temp <- data.frame(pt = pt[i], Hot_Arrivals = from_hot,
+                       Warm_Arrivals = from_warm,
+                       Cold_Arrivals = from_cold)
     if (i == 1) ret <- temp
     else ret <- rbind(ret, temp)
   }
