@@ -84,7 +84,7 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
     venues <- read_pilr(data_set = "pilrhealth:liitah:personal_venue", schema = "1", 
                         query_params = list(participant = pt[i]))
     if (nrow(log) == 0) {
-      temp <- data.frame(pt = paste0(pt[i], " (NO DATA)"), 
+      temp <- data.frame(pt = paste0(pt[i], " (NO LOGIN)"), 
                          Total_Venues = nrow(venues), 
                          Total_Polls = 0,
                          Total_Triggers = 0, Polls_at_Venue = 0,
