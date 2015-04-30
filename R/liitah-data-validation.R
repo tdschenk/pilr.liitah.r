@@ -92,7 +92,7 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                          Warm_Polls = 0,
                          Cold_Polls = 0,
                          Last_Venue_Added = NA,
-                         #                   Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
+                         Last_Manual_Arrival_Log = NA,
                          Last_Poll = NA,
                          First_Poll = NA)
     }
@@ -111,6 +111,8 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
       polls = log[log$tag == "POLLING_SERVICE_ANDROID", ]
       polls_at_location = polls[polls$args.category == "at_venue", ]
       triggers = log[log$tag == 'ARRIVAL_TRIGGER',]
+      # This line for MANUAL_ARRIVAL
+      training_recs = log[log$tag == 'MANUAL_ARRIVAL',]
       
       # Table of the summary measures
       temp <- data.frame(pt = paste0(pt[i]), 
@@ -121,7 +123,7 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                          Warm_Polls = polls[polls$args.category == "warm", ] %>% nrow(),
                          Cold_Polls = polls[polls$args.category == "cold", ] %>% nrow(),
                          Last_Venue_Added = max(venues$local_time) %>% as.character(),
-                         #                   Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
+                         Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
                          Last_Poll = max(log$local_time) %>% as.character(),
                          First_Poll = min(log$local_time) %>% as.character())
     }
@@ -129,6 +131,7 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
     else ret <- rbind(ret, temp)
   }
   if (!exists("ret")) ret <- temp
+  ret[ret == -Inf] <- NA
   ret
 }
 
