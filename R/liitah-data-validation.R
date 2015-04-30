@@ -83,36 +83,52 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                      query_params = list(participant = pt[i]))
     venues <- read_pilr(data_set = "pilrhealth:liitah:personal_venue", schema = "1", 
                         query_params = list(participant = pt[i]))
-    #training_recs <- read_pilr(data_set = "pilrhealth:liitah:personal_venue_training_record", schema = "1", 
-    #                           query_params = list(participant = pt[i]))
-    filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
-    venues$local_time = venues$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    #training_recs$local_time = training_recs$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    #training_recs = training_recs[training_recs$local_time > filterStart & training_recs$local_time < filterEnd, ]
-    # ==== Summarize data ====
-    # Query data for some summary measures
-    polls = log[log$tag == "POLLING_SERVICE_ANDROID", ]
-    polls_at_location = polls[polls$args.category == "at_venue", ]
-    triggers = log[log$tag == 'ARRIVAL_TRIGGER',]
-    
-    # Table of the summary measures
-    temp <- data.frame(pt = pt[i], 
-                       Total_Venues = nrow(venues), 
-                       Total_Polls = nrow(polls),
-                       Total_Triggers = nrow(triggers), Polls_at_Venue = nrow(polls_at_location),
-                       Hot_Polls = polls[polls$args.category == "hot", ] %>% nrow(),
-                       Warm_Polls = polls[polls$args.category == "warm", ] %>% nrow(),
-                       Cold_Polls = polls[polls$args.category == "cold", ] %>% nrow(),
-                       Last_Venue_Added = max(venues$local_time) %>% as.character(),
-    #                   Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
-                       Last_Poll = max(log$local_time) %>% as.character(),
-                       First_Poll = min(log$local_time) %>% as.character())
+    if (nrow(log) == 0) {
+      temp <- data.frame(pt = paste0(pt[i], " (NO DATA)"), 
+                         Total_Venues = nrow(venues), 
+                         Total_Polls = 0,
+                         Total_Triggers = 0, Polls_at_Venue = 0,
+                         Hot_Polls = 0,
+                         Warm_Polls = 0,
+                         Cold_Polls = 0,
+                         Last_Venue_Added = NA,
+                         #                   Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
+                         Last_Poll = NA,
+                         First_Poll = NA)
+    }
+    else {
+      #training_recs <- read_pilr(data_set = "pilrhealth:liitah:personal_venue_training_record", schema = "1", 
+      #                           query_params = list(participant = pt[i]))
+      filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+      filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+      log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+      log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
+      venues$local_time = venues$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+      #training_recs$local_time = training_recs$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+      #training_recs = training_recs[training_recs$local_time > filterStart & training_recs$local_time < filterEnd, ]
+      # ==== Summarize data ====
+      # Query data for some summary measures
+      polls = log[log$tag == "POLLING_SERVICE_ANDROID", ]
+      polls_at_location = polls[polls$args.category == "at_venue", ]
+      triggers = log[log$tag == 'ARRIVAL_TRIGGER',]
+      
+      # Table of the summary measures
+      temp <- data.frame(pt = paste0(pt[i]), 
+                         Total_Venues = nrow(venues), 
+                         Total_Polls = nrow(polls),
+                         Total_Triggers = nrow(triggers), Polls_at_Venue = nrow(polls_at_location),
+                         Hot_Polls = polls[polls$args.category == "hot", ] %>% nrow(),
+                         Warm_Polls = polls[polls$args.category == "warm", ] %>% nrow(),
+                         Cold_Polls = polls[polls$args.category == "cold", ] %>% nrow(),
+                         Last_Venue_Added = max(venues$local_time) %>% as.character(),
+                         #                   Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
+                         Last_Poll = max(log$local_time) %>% as.character(),
+                         First_Poll = min(log$local_time) %>% as.character())
+    }
     if (i == 1) ret <- temp
     else ret <- rbind(ret, temp)
   }
+  if (!exists("ret")) ret <- temp
   ret
 }
 
@@ -200,7 +216,7 @@ arrival_diff <- function(pt) {
       i <- i + 1
     }
     if (nrow(temp) == 0) temp <- data.frame(pt = pt[j], venue = "NO TRIGGERS",
-                                              avg_diff = 0, no_triggers = 0)
+                                            avg_diff = 0, no_triggers = 0)
     if (j == 1) ret <- temp
     else ret <- rbind(ret, temp)
   }
