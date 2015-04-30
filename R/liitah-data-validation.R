@@ -103,7 +103,7 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
       filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
       log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
       log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
-      venues$local_time = venues$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+      if (nrow(venues) != 0) venues$local_time = venues$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
       #training_recs$local_time = training_recs$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
       #training_recs = training_recs[training_recs$local_time > filterStart & training_recs$local_time < filterEnd, ]
       # ==== Summarize data ====
