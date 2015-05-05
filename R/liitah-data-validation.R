@@ -93,6 +93,7 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                          Cold_Polls = 0,
                          Last_Venue_Added = NA,
                          Last_Manual_Arrival_Log = NA,
+                         Total_Manual_Arrival_Logs = 0,
                          Last_Poll = NA,
                          First_Poll = NA)
     }
@@ -124,6 +125,7 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                          Cold_Polls = polls[polls$args.category == "cold", ] %>% nrow(),
                          Last_Venue_Added = max(venues$local_time) %>% as.character(),
                          Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
+                         Total_Manual_Arrival_Logs = nrow(training_recs),
                          Last_Poll = max(log$local_time) %>% as.character(),
                          First_Poll = min(log$local_time) %>% as.character())
     }
