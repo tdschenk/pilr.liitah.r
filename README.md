@@ -18,8 +18,9 @@ options(pilr_default_access_code = "<access_code>")
 
 ## Functions
 
-Example function calls can also be found in tests/testing.r  
-All functions can be given one or multiple participant values to analyze data from.  
+- Example function calls can also be found in tests/testing.r  
+- All functions can be given one or multiple participant values to analyze data from.  
+- Timestamps are all taken from local_time metadata
 
 **full_summary:** Returns a large dataframe of summary variables with one row per participant
 ```` R
