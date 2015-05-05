@@ -2,12 +2,12 @@
 #' @export
 full_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                          filterEnd = '2016-04-11T23:59:59Z') {
-  basic <- basic_summary(pt)
-  arrivals <- arrival_table(pt)
+  basic <- basic_summary(pt, filterStart = filterStart, filterEnd = filterEnd)
+  arrivals <- arrival_table(pt, filterStart = filterStart, filterEnd = filterEnd)
   arrivals <- subset(arrivals, select = -c(pt))
   # Difference from manual arrival and trigger
-  trigger_diff <- arrival_diff(pt)
-  condensed <- arrival_condense(trigger_diff)
+  trigger_diff <- arrival_diff_avg(pt, filterStart = filterStart, filterEnd = filterEnd)
+  condensed <- arrival_condense(trigger_diff, filterStart = filterStart, filterEnd = filterEnd)
   condensed <- subset(condensed, select = -c(pt))
   # cbind all dataframes
   ret <- cbind(basic, arrivals, condensed)
@@ -17,9 +17,14 @@ full_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
 ## FUNCTION: Quantify arrivals
 ## For each arrival, report time since warm and time since cold
 #' @export
-arrival_summary <- function(pt) {
+arrival_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
+                            filterEnd = '2016-04-11T23:59:59Z') {
   log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
                    query_params = list(participant = pt))
+  filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+  filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+  log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+  log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
   # Only include pollings with a category
   log <- log[!is.na(log$args.category),]
   log <- log[log$args.category != "",]
@@ -53,10 +58,11 @@ arrival_summary <- function(pt) {
 
 ## FUNCTION: Return percentages of arrival_summary
 #' @export
-arrival_table <- function(pt) {
+arrival_table <- function(pt, filterStart = '2014-04-10T14:00:01Z',
+                          filterEnd = '2016-04-11T23:59:59Z') {
   # For each participant entered summarize arrivals
   for (i in 1:length(pt)) {
-    arrivals <- arrival_summary(pt[i])
+    arrivals <- arrival_summary(pt[i], filterStart = filterStart, filterEnd = filterEnd)
     totals <- as.data.frame(table(arrivals$last_cat))
     from_hot <- as.numeric(totals[totals$Var1 == "hot",][2])
     from_warm <- as.numeric(totals[totals$Var1 == "warm",][2])
@@ -83,6 +89,11 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                      query_params = list(participant = pt[i]))
     venues <- read_pilr(data_set = "pilrhealth:liitah:personal_venue", schema = "1", 
                         query_params = list(participant = pt[i]))
+    filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
+    venues = venues[venues$local_time > filterStart & venues$local_time < filterEnd, ]
     if (nrow(log) == 0) {
       temp <- data.frame(pt = paste0(pt[i], " (NO LOGIN)"), 
                          Total_Venues = nrow(venues), 
@@ -139,12 +150,19 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
 
 ## FUNCTION: Comparing locations in venues to training recs
 #' @export
-venue_diff <- function(pt) {
+venue_diff <- function(pt, filterStart = '2014-04-10T14:00:01Z',
+                       filterEnd = '2016-04-11T23:59:59Z') {
   # Read in data from PiLR API
   venues <- read_pilr(data_set = "pilrhealth:liitah:personal_venue", schema = "1", 
                       query_params = list(participant = pt))
   training <- read_pilr(data_set = "pilrhealth:liitah:personal_venue_training_record", schema = "1", 
                         query_params = list(participant = pt))
+  
+  filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+  filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+  log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+  venues = venues[venues$local_time > filterStart & venues$local_time < filterEnd, ]
+  training = training[training$local_time > filterStart & training$local_time < filterEnd, ]
   # Format and merge data frame. Keep track of first location entry.
   venues <- rename(venues, c("id" = "venue_id", "trig_info.lon" = "lon", "trig_info.lat" = "lat"))
   training <- rename(training, c("info.lon" = "lon", "info.lat" = "lat"))
@@ -176,15 +194,20 @@ venue_diff <- function(pt) {
 }
 
 ## FUNCTION: Time difference between arrival_trigger and manual_arrival
-## Average per venue for one participant. Difference in minutes.
+## Average per venue. Difference in minutes.
 ## Positive diff means arrival_trigger came first
 ## NA diff means no arrival_trigger detected near manual_arrival
 #' @export
-arrival_diff <- function(pt) {
+arrival_diff_avg <- function(pt, filterStart = '2014-04-10T14:00:01Z',
+                             filterEnd = '2016-04-11T23:59:59Z') {
   for (j in 1:length(pt)) {
     # Read in data
     log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
                      query_params = list(participant = pt[j]))
+    filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
     occurences <- data.frame(venue = character(), trigger_diff = numeric())
     # Find each manual_arrival
     i <- 1
@@ -215,7 +238,8 @@ arrival_diff <- function(pt) {
       sub <- subset(occurences, venue == unique(occurences$venue)[i])
       num_na <- count(subset(sub, is.na(trigger_diff)))
       sub <- subset(sub, !is.na(trigger_diff))
-      avg <- mean(sub$trigger_diff)
+      avg <- mean(sub$trigger_diff, na.rm=TRUE)
+      if (is.nan(avg)) avg = NA
       temp <- rbind(temp, data.frame(pt = pt[j], venue = unique(occurences$venue)[i], 
                                      avg_diff = avg, no_triggers = as.numeric(num_na)))
       i <- i + 1
@@ -228,16 +252,60 @@ arrival_diff <- function(pt) {
   ret
 }
 
-## FUNCTION: Condense arrival_diff results into 1 row per participant
+## FUNCTION: Condense arrival_diff results into 1 row per participant for full summary
 #' @export
 arrival_condense <- function(diff) {
   for (i in 1:length(unique(diff$pt))) {
     sub <- subset(diff, pt == unique(diff$pt)[i])
-    avg <- mean(sub$avg_diff)
+    avg <- mean(sub$avg_diff, na.rm=TRUE)
     tot <- sum(sub$no_triggers)
     temp <- data.frame(pt = unique(diff$pt)[i], Average_Trigger_Diff = avg, No_Triggers = tot)
     if (i == 1) ret <- temp
     else ret <- rbind(ret, temp)
+  }
+  ret
+}
+
+## FUNCTION: Time difference between arrival_trigger and manual_arrival
+## For every arrival instance. Difference in minutes.
+## Positive diff means arrival_trigger came first
+## NA diff means no arrival_trigger detected near manual_arrival
+#' @export
+arrival_diff_inst <- function(pt, filterStart = '2014-04-10T14:00:01Z',
+                              filterEnd = '2016-04-11T23:59:59Z') {
+  for (j in 1:length(pt)) {
+    # Read in data
+    log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
+                     query_params = list(participant = pt[j]))
+    filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
+    occurences <- data.frame(pt = character(), local_time = character(),
+                             venue = character(), trigger_diff = numeric())
+    # Find each manual_arrival
+    i <- 1
+    while (i < nrow(log)) {
+      if (log$tag[i] == "MANUAL_ARRIVAL") {
+        venue <- log$args.response_value[i]
+        time <- as.POSIXct(log$local_time[i], format = "%Y-%m-%dT%H:%M:%SZ")
+        # Find time difference of arrival_trigger if present
+        if (i <= 10) sub <- log[1:(i+10),]
+        else if (i >= nrow(log)-10) sub <- log[(i-10):nrow(log),]
+        else sub <- log[(i-10):(i+10),]
+        if (!any(sub$tag == "ARRIVAL_TRIGGER")) diff <- NA
+        else {
+          index <- match("ARRIVAL_TRIGGER", sub$tag)
+          diff <- as.numeric(as.POSIXct(log$local_time[i], format = "%Y-%m-%dT%H:%M:%SZ") -
+                               as.POSIXct(sub$local_time[index], format = "%Y-%m-%dT%H:%M:%SZ"))
+        }
+        occurences <- rbind(occurences, data.frame(pt = pt[j], local_time = time,
+                                                   venue = venue, trigger_diff = diff))
+      }
+      i <- i + 1
+    }
+    if (j == 1) ret <- occurences
+    else ret <- rbind(ret, occurences)
   }
   ret
 }
