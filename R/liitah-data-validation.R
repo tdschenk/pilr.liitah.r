@@ -15,45 +15,49 @@ full_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
 }
 
 ## FUNCTION: Quantify arrivals
-## For each arrival, report time since warm and time since cold
+## For each at_venue arrival, return if it came from cold, warm, or hot category
 #' @export
 arrival_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                             filterEnd = '2016-04-11T23:59:59Z') {
-  log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
-                   query_params = list(participant = pt))
-  filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-  filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-  log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-  log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
-  # Only include pollings with a category
-  log <- log[!is.na(log$args.category),]
-  log <- log[log$args.category != "",]
-  ret <- data.frame(venue = character(), 
-                    arrival_time = as.Date(character()),
-                    last_cat = character())
-  # Loop through all, find each time you enter 'at_venue'
-  i <- 1
-  polled_at_venue = FALSE
-  while (i <= nrow(log)) {
-    # Find initial instance of at_venue
-    if (log$args.category[i] == "at_venue" && !is.na(log$args.category[i])) {
-      # Find time since last reported as hot,warm,cold
-      j <- i - 1
-      while ((is.na(log$args.category[j]) || log$args.category[j] == "") && j > 1)
-        j <- j - 1
-      prev_cat <- log$args.category[j]
-      if (j <= 1) prev_cat <- "first"
-      temp <- data.frame(venue = log$args.nearest_venue[i], 
-                         arrival_time = log$local_time[i], 
-                         last_cat = prev_cat) 
-      ret <- rbind(ret, temp)
-      # Loop through current set of 'at_venue' polls
-      while (log$args.category[i] == "at_venue" && i <= nrow(log)
-             && !is.na(log$args.category[i])) i <- i + 1
+  for (k in 1:length(pt)) {
+    log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
+                     query_params = list(participant = pt[k]))
+    filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+    log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
+    # Only include pollings with a category
+    log <- log[!is.na(log$args.category),]
+    log <- log[log$args.category != "",]
+    ret <- data.frame(pt = character(), venue = character(), 
+                      arrival_time = as.Date(character()),
+                      last_cat = character())
+    # Loop through all, find each time you enter 'at_venue'
+    i <- 1
+    polled_at_venue = FALSE
+    while (i <= nrow(log)) {
+      # Find initial instance of at_venue
+      if (log$args.category[i] == "at_venue" && !is.na(log$args.category[i])) {
+        # Find time since last reported as hot,warm,cold
+        j <- i - 1
+        while ((is.na(log$args.category[j]) || log$args.category[j] == "") && j > 1)
+          j <- j - 1
+        prev_cat <- log$args.category[j]
+        if (j <= 1) prev_cat <- "first"
+        temp <- data.frame(pt = pt[k], venue = log$args.nearest_venue[i], 
+                           arrival_time = log$local_time[i], 
+                           last_cat = prev_cat) 
+        ret <- rbind(ret, temp)
+        # Loop through current set of 'at_venue' polls
+        while (log$args.category[i] == "at_venue" && i <= nrow(log)
+               && !is.na(log$args.category[i])) i <- i + 1
+      }
+      i <- i + 1
     }
-    i <- i + 1
+    if (k == 1) ret2 <- ret
+    else ret2 <- rbind(ret2, ret)
   }
-  ret
+  ret2
 }
 
 ## FUNCTION: Return percentages of arrival_summary
