@@ -7,7 +7,7 @@ full_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
   arrivals <- subset(arrivals, select = -c(pt))
   # Difference from manual arrival and trigger
   trigger_diff <- arrival_diff_avg(pt, filterStart = filterStart, filterEnd = filterEnd)
-  condensed <- arrival_condense(trigger_diff, filterStart = filterStart, filterEnd = filterEnd)
+  condensed <- arrival_condense(trigger_diff)
   condensed <- subset(condensed, select = -c(pt))
   # cbind all dataframes
   ret <- cbind(basic, arrivals, condensed)
@@ -24,36 +24,39 @@ arrival_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                      query_params = list(participant = pt[k]))
     filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
     filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
-    # Only include pollings with a category
-    log <- log[!is.na(log$args.category),]
-    log <- log[log$args.category != "",]
     ret <- data.frame(pt = character(), venue = character(), 
                       arrival_time = as.Date(character()),
                       last_cat = character())
-    # Loop through all, find each time you enter 'at_venue'
-    i <- 1
-    polled_at_venue = FALSE
-    while (i <= nrow(log)) {
-      # Find initial instance of at_venue
-      if (log$args.category[i] == "at_venue" && !is.na(log$args.category[i])) {
-        # Find time since last reported as hot,warm,cold
-        j <- i - 1
-        while ((is.na(log$args.category[j]) || log$args.category[j] == "") && j > 1)
-          j <- j - 1
-        prev_cat <- log$args.category[j]
-        if (j <= 1) prev_cat <- "first"
-        temp <- data.frame(pt = pt[k], venue = log$args.nearest_venue[i], 
-                           arrival_time = log$local_time[i], 
-                           last_cat = prev_cat) 
-        ret <- rbind(ret, temp)
-        # Loop through current set of 'at_venue' polls
-        while (log$args.category[i] == "at_venue" && i <= nrow(log)
-               && !is.na(log$args.category[i])) i <- i + 1
+    if (nrow(log)) {
+      log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+      log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
+      # Only include pollings with a category
+      log <- log[!is.na(log$args.category),]
+      log <- log[log$args.category != "",]
+      # Loop through all, find each time you enter 'at_venue'
+      i <- 1
+      polled_at_venue = FALSE
+      while (i <= nrow(log)) {
+        # Find initial instance of at_venue
+        if (log$args.category[i] == "at_venue" && !is.na(log$args.category[i])) {
+          # Find time since last reported as hot,warm,cold
+          j <- i - 1
+          while ((is.na(log$args.category[j]) || log$args.category[j] == "") && j > 1)
+            j <- j - 1
+          prev_cat <- log$args.category[j]
+          if (j <= 1) prev_cat <- "first"
+          temp <- data.frame(pt = pt[k], venue = log$args.nearest_venue[i], 
+                             arrival_time = log$local_time[i], 
+                             last_cat = prev_cat) 
+          ret <- rbind(ret, temp)
+          # Loop through current set of 'at_venue' polls
+          while (log$args.category[i] == "at_venue" && i <= nrow(log)
+                 && !is.na(log$args.category[i])) i <- i + 1
+        }
+        i <- i + 1
       }
-      i <- i + 1
     }
+    else {}
     if (k == 1) ret2 <- ret
     else ret2 <- rbind(ret2, ret)
   }
@@ -95,9 +98,6 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                         query_params = list(participant = pt[i]))
     filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
     filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
-    venues = venues[venues$local_time > filterStart & venues$local_time < filterEnd, ]
     if (nrow(log) == 0) {
       temp <- data.frame(pt = paste0(pt[i], " (NO LOGIN)"), 
                          Total_Venues = nrow(venues), 
@@ -113,6 +113,9 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                          First_Poll = NA)
     }
     else {
+      log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+      log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
+      venues = venues[venues$local_time > filterStart & venues$local_time < filterEnd, ]
       #training_recs <- read_pilr(data_set = "pilrhealth:liitah:personal_venue_training_record", schema = "1", 
       #                           query_params = list(participant = pt[i]))
       filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
@@ -210,46 +213,48 @@ arrival_diff_avg <- function(pt, filterStart = '2014-04-10T14:00:01Z',
                      query_params = list(participant = pt[j]))
     filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
     filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-    log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
-    occurences <- data.frame(venue = character(), trigger_diff = numeric())
-    # Find each manual_arrival
-    i <- 1
-    while (i < nrow(log)) {
-      if (log$tag[i] == "MANUAL_ARRIVAL") {
-        venue <- log$args.response_value[i]
-        # Find time difference of arrival_trigger if present
-        if (i <= 10) sub <- log[1:(i+10),]
-        else if (i >= nrow(log)-10) sub <- log[(i-10):nrow(log),]
-        else sub <- log[(i-10):(i+10),]
-        if (!any(sub$tag == "ARRIVAL_TRIGGER")) diff <- NA
-        else {
-          index <- match("ARRIVAL_TRIGGER", sub$tag)
-          diff <- as.numeric(as.POSIXct(log$local_time[i], format = "%Y-%m-%dT%H:%M:%SZ") -
-                               as.POSIXct(sub$local_time[index], format = "%Y-%m-%dT%H:%M:%SZ"))
-        }
-        occurences <- rbind(occurences, data.frame(venue = venue, trigger_diff = diff))
-      }
-      i <- i + 1
-    }
-    # Remove any NA venues
-    occurences <- subset(occurences, !is.na(venue))
-    # Summarize by venue
     temp <- data.frame(pt = character(), venue = character(),
                        avg_diff = numeric(), no_triggers = numeric())
-    i <- 1
-    while (i <= length(unique(occurences$venue))) {
-      sub <- subset(occurences, venue == unique(occurences$venue)[i])
-      num_na <- count(subset(sub, is.na(trigger_diff)))
-      sub <- subset(sub, !is.na(trigger_diff))
-      avg <- mean(sub$trigger_diff, na.rm=TRUE)
-      if (is.nan(avg)) avg = NA
-      temp <- rbind(temp, data.frame(pt = pt[j], venue = unique(occurences$venue)[i], 
-                                     avg_diff = avg, no_triggers = as.numeric(num_na)))
-      i <- i + 1
+    if (nrow(log)) {
+      log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+      log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
+      occurences <- data.frame(venue = character(), trigger_diff = numeric())
+      # Find each manual_arrival
+      i <- 1
+      while (i < nrow(log)) {
+        if (log$tag[i] == "MANUAL_ARRIVAL") {
+          venue <- log$args.response_value[i]
+          # Find time difference of arrival_trigger if present
+          if (i <= 10) sub <- log[1:(i+10),]
+          else if (i >= nrow(log)-10) sub <- log[(i-10):nrow(log),]
+          else sub <- log[(i-10):(i+10),]
+          if (!any(sub$tag == "ARRIVAL_TRIGGER")) diff <- NA
+          else {
+            index <- match("ARRIVAL_TRIGGER", sub$tag)
+            diff <- as.numeric(as.POSIXct(log$local_time[i], format = "%Y-%m-%dT%H:%M:%SZ") -
+                                 as.POSIXct(sub$local_time[index], format = "%Y-%m-%dT%H:%M:%SZ"))
+          }
+          occurences <- rbind(occurences, data.frame(venue = venue, trigger_diff = diff))
+        }
+        i <- i + 1
+      }
+      # Remove any NA venues
+      occurences <- subset(occurences, !is.na(venue))
+      # Summarize by venue
+      i <- 1
+      while (i <= length(unique(occurences$venue))) {
+        sub <- subset(occurences, venue == unique(occurences$venue)[i])
+        num_na <- count(subset(sub, is.na(trigger_diff)))
+        sub <- subset(sub, !is.na(trigger_diff))
+        avg <- mean(sub$trigger_diff, na.rm=TRUE)
+        if (is.nan(avg)) avg = NA
+        temp <- rbind(temp, data.frame(pt = pt[j], venue = unique(occurences$venue)[i], 
+                                       avg_diff = avg, no_triggers = as.numeric(num_na)))
+        i <- i + 1
+      }
+      if (nrow(temp) == 0) temp <- data.frame(pt = pt[j], venue = "NO TRIGGERS",
+                                              avg_diff = 0, no_triggers = 0)
     }
-    if (nrow(temp) == 0) temp <- data.frame(pt = pt[j], venue = "NO TRIGGERS",
-                                            avg_diff = 0, no_triggers = 0)
     if (j == 1) ret <- temp
     else ret <- rbind(ret, temp)
   }
@@ -259,13 +264,18 @@ arrival_diff_avg <- function(pt, filterStart = '2014-04-10T14:00:01Z',
 ## FUNCTION: Condense arrival_diff results into 1 row per participant for full summary
 #' @export
 arrival_condense <- function(diff) {
-  for (i in 1:length(unique(diff$pt))) {
-    sub <- subset(diff, pt == unique(diff$pt)[i])
-    avg <- mean(sub$avg_diff, na.rm=TRUE)
-    tot <- sum(sub$no_triggers)
-    temp <- data.frame(pt = unique(diff$pt)[i], Average_Trigger_Diff = avg, No_Triggers = tot)
-    if (i == 1) ret <- temp
-    else ret <- rbind(ret, temp)
+  if (nrow(diff)) {
+    for (i in 1:length(unique(diff$pt))) {
+      sub <- subset(diff, pt == unique(diff$pt)[i])
+      avg <- mean(sub$avg_diff, na.rm=TRUE)
+      tot <- sum(sub$no_triggers)
+      temp <- data.frame(pt = unique(diff$pt)[i], Average_Trigger_Diff = avg, No_Triggers = tot)
+      if (i == 1) ret <- temp
+      else ret <- rbind(ret, temp)
+    }
+  }
+  else {
+    ret <- data.frame(pt = NA, Average_Trigger_Diff = NA, No_Triggers = NA)
   }
   ret
 }
