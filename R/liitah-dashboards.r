@@ -23,15 +23,15 @@ full_table <- function(data, params, ...) {
   
   # Table of the summary measures
   temp1 <- data.frame(#pt = paste0(pt[i]),
-                      Total_Polls = nrow(polls),
-                      Total_Triggers = nrow(triggers), Polls_at_Venue = nrow(polls_at_location),
-                      Hot_Polls = polls[polls$args.category == "hot", ] %>% nrow(),
-                      Warm_Polls = polls[polls$args.category == "warm", ] %>% nrow(),
-                      Cold_Polls = polls[polls$args.category == "cold", ] %>% nrow(),
-                      Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
-                      Total_Manual_Arrival_Logs = nrow(training_recs),
-                      Last_Poll = max(log$local_time) %>% as.character(),
-                      First_Poll = min(log$local_time) %>% as.character())
+    Total_Polls = nrow(polls),
+    Total_Triggers = nrow(triggers), Polls_at_Venue = nrow(polls_at_location),
+    Hot_Polls = polls[polls$args.category == "hot", ] %>% nrow(),
+    Warm_Polls = polls[polls$args.category == "warm", ] %>% nrow(),
+    Cold_Polls = polls[polls$args.category == "cold", ] %>% nrow(),
+    Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
+    Total_Manual_Arrival_Logs = nrow(training_recs),
+    Last_Poll = max(log$local_time) %>% as.character(),
+    First_Poll = min(log$local_time) %>% as.character())
   htmlTable(temp1)
 }
 
@@ -57,10 +57,11 @@ polls_per_day <- function(data, params, ...) {
     summary <- rbind(summary, data.frame(day = days[i], category = "at_venue", count = at_venue))
   }
   
-  summary %>%
+  ret <- summary %>%
     ggvis(x = ~day, y = ~count, fill = ~category) %>%
     layer_bars() %>%
     add_axis("x", title = "",
              properties = axis_props(labels = list(angle = 45, align = "left"))) %>%
     add_axis("y", title = "Polls")
+    paste0(capture.output(show_spec(ret)), collapse = "")
 }
