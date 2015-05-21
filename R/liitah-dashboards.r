@@ -64,4 +64,5 @@ polls_per_day <- function(data, params, ...) {
              properties = axis_props(labels = list(angle = 45, align = "left"))) %>%
     add_axis("y", title = "Polls")
     paste0(capture.output(show_spec(ret)), collapse = "")
+  ## test
 }
