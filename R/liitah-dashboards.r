@@ -69,7 +69,7 @@ polls_per_day <- function(data, params, ...) {
 #' @export
 triggers_per_day <- function(data, params, ...) {
   data %>%
-    ggvis(x = ~args.category) %>%
+    ggvis(x = ~tag) %>%
     layer_bars()
 }
 
