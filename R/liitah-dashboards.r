@@ -64,5 +64,18 @@ polls_per_day <- function(data, params, ...) {
              properties = axis_props(labels = list(angle = 45, align = "left"))) %>%
     add_axis("y", title = "Polls")
     paste0(capture.output(show_spec(ret)), collapse = "")
-  ## test
+}
+
+## Bar graph of total triggers per day
+#' @export
+triggers_per_day <- function(data, params, ...) {
+  triggers <- data[data$tag == 'ARRIVAL_TRIGGER',]
+  num <- nrow(triggers)
+  data <- data.frame(x = 1, y = 1)
+  ret <- data %>% ggvis(~x, ~y) %>% 
+    layer_text(text:=paste0("Result: ", num),
+               dx := 50, fontWeight := "bold", fontSize := 20) %>%  
+    hide_axis("x") %>% 
+    hide_axis("y")
+  return(paste0(capture.output(show_spec(ret)), collapse = ""))
 }
