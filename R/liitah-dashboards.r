@@ -2,37 +2,8 @@
 ## (?) How to handle multiple participants (?)
 #' @export
 full_table <- function(data, params, ...) {
-  log <- data
-  
-  ## BASIC SUMMARY
-  log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-  log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
-  venues = venues[venues$local_time > filterStart & venues$local_time < filterEnd, ]
-  filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-  filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-  log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-  log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
-  if (nrow(venues) != 0) venues$local_time = venues$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
-  # ==== Summarize data ====
-  # Query data for some summary measures
-  polls = log[log$tag == "POLLING_SERVICE_ANDROID", ]
-  polls_at_location = polls[polls$args.category == "at_venue", ]
-  triggers = log[log$tag == 'ARRIVAL_TRIGGER',]
-  # This line for MANUAL_ARRIVAL
-  training_recs = log[log$tag == 'MANUAL_ARRIVAL',]
-  
-  # Table of the summary measures
-  temp1 <- data.frame(#pt = paste0(pt[i]),
-    Total_Polls = nrow(polls),
-    Total_Triggers = nrow(triggers), Polls_at_Venue = nrow(polls_at_location),
-    Hot_Polls = polls[polls$args.category == "hot", ] %>% nrow(),
-    Warm_Polls = polls[polls$args.category == "warm", ] %>% nrow(),
-    Cold_Polls = polls[polls$args.category == "cold", ] %>% nrow(),
-    Last_Manual_Arrival_Log = max(training_recs$local_time) %>% as.character(),
-    Total_Manual_Arrival_Logs = nrow(training_recs),
-    Last_Poll = max(log$local_time) %>% as.character(),
-    First_Poll = min(log$local_time) %>% as.character())
-  htmlTable(temp1)
+  htmltest <- xtable(data.frame(x = c(1), y = c(2)))
+  print(htmltest, type= "html")
 }
 
 ## Bar graph of hot/warm/cold polls per day for one participant
