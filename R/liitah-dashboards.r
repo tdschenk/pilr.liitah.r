@@ -68,8 +68,9 @@ polls_per_day <- function(data, params, ...) {
 ## Bar graph of total triggers per day
 #' @export
 triggers_per_day <- function(data, params, ...) {
-  data %>%
-    ggvis(x = ~tag) %>%
+  test <- data.frame(x = c(1,2), y = c(3,4))
+  test %>%
+    ggvis(x = ~x, y = ~y) %>%
     layer_bars()
 }
 
