@@ -68,10 +68,14 @@ polls_per_day <- function(data, params, ...) {
 ## Bar graph of total triggers per day
 #' @export
 triggers_per_day <- function(data, params, ...) {
-  triggers <- data[data$tag == 'ARRIVAL_TRIGGER',]
-  triggers$day <- substr(triggers$local_time, 0, 10)
-  triggers %>%
-    ggvis(x = ~day) %>%
-    layer_bars() %>%
-    add_axis("y", title = "triggers")
+  data %>%
+    ggvis(x = ~args.category) %>%
+    layer_bars()
 }
+
+#triggers <- data[data$tag == 'ARRIVAL_TRIGGER',]
+#triggers$day <- substr(triggers$local_time, 0, 10)
+#triggers %>%
+#  ggvis(x = ~day) %>%
+#  layer_bars() %>%
+#  add_axis("y", title = "triggers")
