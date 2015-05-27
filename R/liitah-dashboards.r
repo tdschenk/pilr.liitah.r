@@ -57,13 +57,12 @@ polls_per_day <- function(data, params, ...) {
     summary <- rbind(summary, data.frame(day = days[i], category = "at_venue", count = at_venue))
   }
   
-  ret <- summary %>%
+  summary %>%
     ggvis(x = ~day, y = ~count, fill = ~category) %>%
     layer_bars() %>%
     add_axis("x", title = "",
              properties = axis_props(labels = list(angle = 45, align = "left"))) %>%
     add_axis("y", title = "Polls")
-    paste0(capture.output(show_spec(ret)), collapse = "")
 }
 
 ## Bar graph of total triggers per day
