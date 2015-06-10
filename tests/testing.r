@@ -4,7 +4,8 @@ library(pilr.liitah.r)
 ## Set default server, project, access_code
 options(pilr_server_default = "http://liitah.pilrhealth.com")
 options(pilr_project_default = "liitah_testing_2")
-options(pilr_default_access_code = "<access_code>")
+options(pilr_default_access_code = "429913fe-472f-4140-919e-40241d76ed99")
+data <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = 1, query_params = list(participant = "109"))
 
 ## Full summary - all 600 participants
 full <- full_summary(c(601,602,603,604,605,606,607,608,609,610,611,612,613,614,615,616,617,618))
