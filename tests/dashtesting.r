@@ -1,3 +1,4 @@
+### SETUP ###
 # Load packages
 library(pilr.api.r)
 
@@ -8,6 +9,7 @@ options(pilr_default_access_code = "429913fe-472f-4140-919e-40241d76ed99")
 data <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = 1, query_params = list(participant = "409"))
 params <- ""
 
+### DASHBOARDS ###
 # Polls per day
 polldash <- polls_per_day(data, params)
 

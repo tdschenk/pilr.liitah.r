@@ -45,7 +45,9 @@ full_table <- function(data, params, ...) {
                      cgroup = c("Triggers", "Polls", "Manual Arrivals"),
                      rnames = c(log$pt),
                      n.cgroup = c(2, 7, 2),
-                     align = "|cc|ccccccc|cc")
+                     align = "|cc|ccccccc|cc",
+                     col.columns = c(rep("#FFFFCC", 2),
+                                     rep("#E6E6F0", 7)))
   table
 }
 
