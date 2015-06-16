@@ -6,7 +6,10 @@ library(pilr.api.r)
 options(pilr_server_default = "http://liitah.pilrhealth.com")
 options(pilr_project_default = "liitah_testing_2")
 options(pilr_default_access_code = "429913fe-472f-4140-919e-40241d76ed99")
-data <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = 1, query_params = list(participant = "409"))
+data <- list(log = read_pilr(data_set = "pilrhealth:mobile:app_log", schema = 1,
+                             query_params = list(participant = "409")),
+             venue = read_pilr(data_set = "pilrhealth:liitah:personal_venue", schema = 1,
+                               query_params = list(participant = "409")))
 params <- ""
 
 ### DASHBOARDS ###

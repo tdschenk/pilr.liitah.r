@@ -2,17 +2,19 @@
 ## (?) How to handle multiple participants (?)
 #' @export
 full_table <- function(data, params, ...) {
-  log <- data
-  
+  log <- data$log
+  venue <- data$venue
   ## BASIC SUMMARY
+  ## Deprecated date filter stuff
   #log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
   #log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
   #venues = venues[venues$local_time > filterStart & venues$local_time < filterEnd, ]
   #filterStart = filterStart %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
   #filterEnd = filterEnd %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+  
   log$local_time = log$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
   #log = log[log$local_time > filterStart & log$local_time < filterEnd, ]
-  #if (nrow(venues) != 0) venues$local_time = venues$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
+  if (nrow(venue) != 0) venue$local_time = venue$local_time %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%SZ")
   # ==== Summarize data ====
   # Query data for some summary measures
   polls = log[log$tag == "POLLING_SERVICE_ANDROID", ]
@@ -22,38 +24,35 @@ full_table <- function(data, params, ...) {
   training_recs = log[log$tag == 'MANUAL_ARRIVAL',]
   
   # Create Matrix
-  mx <- matrix(nrow = 1, ncol = 11)
+  mx <- matrix(nrow = 1, ncol = 14)
   rownames(mx) <- c(paste0(data$pt[1]))
-  colnames(mx) <- c("Total_Triggers", "Last_Trigger", "Polls_at_Venue",
-                    "Hot_Polls", "Warm_Polls", "Cold_Polls", "Total_Polls",
+  colnames(mx) <- c("pt", "Total_Venues", "Total_Triggers", "Last_Trigger", "Last_Venue_Added",
+                    "Polls_at_Venue", "Hot_Polls", "Warm_Polls", "Cold_Polls", "Total_Polls",
                     "First_Poll", "Last_Poll", "Last_Manual_Arrival_log",
                     "Total_Manual_Arrival_Logs")
-  mx[1,1] <- nrow(triggers)
-  mx[1,2] <- max(triggers$local_time) %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%S") %>% as.character()
-  mx[1,3] <-  nrow(polls_at_location)
-  mx[1,4] <- polls[polls$args.category == "hot", ] %>% nrow()
-  mx[1,5] <- polls[polls$args.category == "warm", ] %>% nrow()
-  mx[1,6] <- polls[polls$args.category == "cold", ] %>% nrow()
-  mx[1,7] <- nrow(polls)
-  mx[1,8] <- min(log$local_time) %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%S") %>% as.character()
-  mx[1,9] <- max(log$local_time) %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%S") %>% as.character()
-  mx[1,10] <- max(training_recs$local_time) %>% as.character()
-  mx[1,11] <- nrow(training_recs)
   
-  table <- htmlTable(mx, header=c("Total", "Last", "At Venue", "Hot", "Warm",
-                                     "Cold", "Total", "First", "Last", "Last", "Total"),
-                     cgroup = c("Triggers", "Polls", "Manual Arrivals"),
-                     rnames = c(log$pt),
-                     n.cgroup = c(2, 7, 2),
-                     align = "|cc|ccccccc|cc",
-                     col.columns = c(rep("#FFFFCC", 2),
-                                     rep("#E6E6F0", 7)))
-  table
+  mx[1,1] <- log$pt[1]
+  mx[1,2] <- nrow(venue)
+  mx[1,3] <- nrow(triggers)
+  mx[1,4] <- max(triggers$local_time) %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%S") %>% as.character()
+  mx[1,5] <- max(venue$local_time) %>% as.character()
+  mx[1,6] <-  nrow(polls_at_location)
+  mx[1,7] <- polls[polls$args.category == "hot", ] %>% nrow()
+  mx[1,8] <- polls[polls$args.category == "warm", ] %>% nrow()
+  mx[1,9] <- polls[polls$args.category == "cold", ] %>% nrow()
+  mx[1,10] <- nrow(polls)
+  mx[1,11] <- min(log$local_time) %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%S") %>% as.character()
+  mx[1,12] <- max(log$local_time) %>% as.POSIXlt(format = "%Y-%m-%dT%H:%M:%S") %>% as.character()
+  mx[1,13] <- max(training_recs$local_time) %>% as.character()
+  mx[1,14] <- nrow(training_recs)
+  
+  print(xtable(mx), type = "html")
 }
 
 ## Bar graph of hot/warm/cold polls per day for one participant
 #' @export
 polls_per_day <- function(data, params, ...) {
+  data <- data$log
   polls <- data[data$tag == "POLLING_SERVICE_ANDROID", ]
   polls$day <- substr(polls$local_time, 0, 10)
   polls <- polls[polls$args.category != "", ]
@@ -84,6 +83,7 @@ polls_per_day <- function(data, params, ...) {
 ## Bar graph of total triggers per day
 #' @export
 triggers_per_day <- function(data, params, ...) {
+  data <- data$log
   triggers <- data[data$tag == 'ARRIVAL_TRIGGER',]
   triggers$day <- substr(triggers$local_time, 0, 10)
   triggers %>%
