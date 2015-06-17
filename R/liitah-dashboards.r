@@ -52,20 +52,19 @@ full_table <- function(data, params, ...) {
 ## Bar graph of hot/warm/cold polls per day for one participant
 #' @export
 polls_per_day <- function(data, params, ...) {
-  data <- data$log
-  polls <- data[data$tag == "POLLING_SERVICE_ANDROID", ]
-  polls$day <- substr(polls$local_time, 0, 10)
-  polls <- polls[polls$args.category != "", ]
+  polls <- data[data$log.data.tag == "POLLING_SERVICE_ANDROID", ]
+  polls$day <- substr(polls$log.metadata.local_time, 0, 10)
+  polls <- polls[polls$log.data.args.category != "", ]
   days <- unique(polls$day)
   
   # Count polls per day
   summary <- data.frame(day = character(), category = character(), count = numeric())
   for (i in 1:length(days)) {
     polls_sub <- polls[polls$day == days[i], ]
-    cold <- nrow(polls_sub[polls_sub$args.category == "cold",])
-    warm <- nrow(polls_sub[polls_sub$args.category == "warm",])
-    hot <- nrow(polls_sub[polls_sub$args.category == "hot",])
-    at_venue <- nrow(polls_sub[polls_sub$args.category == "at_venue",])
+    cold <- nrow(polls_sub[polls_sub$log.data.args.category == "cold",])
+    warm <- nrow(polls_sub[polls_sub$log.data.args.category == "warm",])
+    hot <- nrow(polls_sub[polls_sub$log.data.args.category == "hot",])
+    at_venue <- nrow(polls_sub[polls_sub$log.data.args.category == "at_venue",])
     summary <- rbind(summary, data.frame(day = days[i], category = "cold", count = cold))
     summary <- rbind(summary, data.frame(day = days[i], category = "warm", count = warm))
     summary <- rbind(summary, data.frame(day = days[i], category = "hot", count = hot))
@@ -83,10 +82,8 @@ polls_per_day <- function(data, params, ...) {
 ## Bar graph of total triggers per day
 #' @export
 triggers_per_day <- function(data, params, ...) {
-  stop(paste0(data))
-  data <- data$log
-  triggers <- data[data$tag == 'ARRIVAL_TRIGGER',]
-  triggers$day <- substr(triggers$local_time, 0, 10)
+  triggers <- data[data$log.data.tag == 'ARRIVAL_TRIGGER',]
+  triggers$day <- substr(triggers$log.metadata.local_time, 0, 10)
   triggers %>%
     ggvis(x = ~day, fill := "#663300") %>%
     layer_bars() %>%
