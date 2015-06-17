@@ -83,6 +83,7 @@ polls_per_day <- function(data, params, ...) {
 ## Bar graph of total triggers per day
 #' @export
 triggers_per_day <- function(data, params, ...) {
+  stop(paste0(data))
   data <- data$log
   triggers <- data[data$tag == 'ARRIVAL_TRIGGER',]
   triggers$day <- substr(triggers$local_time, 0, 10)
