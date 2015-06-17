@@ -2,6 +2,7 @@
 ## (?) How to handle multiple participants (?)
 #' @export
 full_table <- function(data, params, ...) {
+  stop(paste0(colnames(data)))
   log <- data$log
   venue <- data$venue
   ## BASIC SUMMARY
