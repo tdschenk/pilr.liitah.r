@@ -6,4 +6,4 @@ Date: 2015-04-16
 Author: Tyler Schenk (tschenk@meinergy.com)
 Description: Accessing and validating data from the Liitah mobile app
 License: MEI Research, Ltd.
-Depends: pilr.api.r, httr, jsonlite, plyr, dplyr, xtable, ggvis
+Depends: pilr.api.r, httr, jsonlite, plyr, dplyr, xtable, ggvis, leaflet
