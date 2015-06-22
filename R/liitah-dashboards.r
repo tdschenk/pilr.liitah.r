@@ -89,5 +89,11 @@ triggers_per_day <- function(data, params, ...) {
     layer_bars() %>%
     add_axis("x", title = "",
              properties = axis_props(labels = list(angle = 45, align = "left"))) %>%
-    add_axis("y", title = "Triggers")
+    add_axis("y", title = "Triggers") %>%
+    add_tooltip(function(x){
+      x <- subset(x, select = -stack_lwr_)
+      x <- rename(x, Date = x_)
+      x <- rename(x, Total = stack_upr_)
+      paste0(names(x), ": ", format(x), collapse = "<br />")
+    }, "hover")
 }
