@@ -86,22 +86,22 @@ polls_per_day <- function(data, params, ...) {
 ## Bar graph of total triggers per day
 #' @export
 triggers_per_day <- function(data, params, ...) {
-  triggers <- data[data$log.data.tag == 'ARRIVAL_TRIGGER',]
-  triggers$day <- substr(triggers$log.metadata.local_time, 0, 10)
-  triggers %>%
+  triggers <- data[data$log$data$tag == 'ARRIVAL_TRIGGER',]
+  triggers$log$data$day <- substr(triggers$log$metadata$local_time, 0, 10)
+  triggers$log$data %>%
     ggvis(x = ~day, fill := "#663300") %>%
     layer_bars() %>%
     add_axis("x", title = "",
              properties = axis_props(labels = list(angle = 45, align = "left"))) %>%
     add_axis("y", title = "Triggers") %>%
-    add_axis("x", orient = "top", ticks = 0, title = paste0("Participant: ", paste(unique(data$log.metadata.pt),collapse=",")),
+    add_axis("x", orient = "top", ticks = 0, title = paste0("Participant: ", paste(unique(data$log$metadata$pt),collapse=",")),
              properties = axis_props(
                axis = list(stroke = "white"),
                labels = list(fontSize = 0)))
-    #add_tooltip(function(x){
-    #  x <- subset(x, select = -stack_lwr_)
-    #  x <- rename(x, Date = x_)
-    #  x <- rename(x, Total = stack_upr_)
-    #  paste0(names(x), ": ", format(x), collapse = "<br />")
-    #}, "hover")
+  #add_tooltip(function(x){
+  #  x <- subset(x, select = -stack_lwr_)
+  #  x <- rename(x, Date = x_)
+  #  x <- rename(x, Total = stack_upr_)
+  #  paste0(names(x), ": ", format(x), collapse = "<br />")
+  #}, "hover")
 }
