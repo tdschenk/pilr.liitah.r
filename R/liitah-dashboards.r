@@ -52,19 +52,20 @@ full_table <- function(data, params, ...) {
 ## Bar graph of hot/warm/cold polls per day for one participant
 #' @export
 polls_per_day <- function(data, params, ...) {
-  polls <- data[data$log.data.tag == "POLLING_SERVICE_ANDROID", ]
-  polls$day <- substr(polls$log.metadata.local_time, 0, 10)
-  polls <- polls[polls$log.data.args.category != "", ]
+  polls <- data$log$data
+  polls$day <- substr(data$log$metadata$local_time, 0, 10)
+  polls <- polls[polls$tag == "POLLING_SERVICE_ANDROID", ]
+  polls <- polls[polls$args.category != "", ]
   days <- unique(polls$day)
   
   # Count polls per day
   summary <- data.frame(day = character(), category = character(), count = numeric())
   for (i in 1:length(days)) {
     polls_sub <- polls[polls$day == days[i], ]
-    cold <- nrow(polls_sub[polls_sub$log.data.args.category == "cold",])
-    warm <- nrow(polls_sub[polls_sub$log.data.args.category == "warm",])
-    hot <- nrow(polls_sub[polls_sub$log.data.args.category == "hot",])
-    at_venue <- nrow(polls_sub[polls_sub$log.data.args.category == "at_venue",])
+    cold <- nrow(polls_sub[polls_sub$args.category == "cold",])
+    warm <- nrow(polls_sub[polls_sub$args.category == "warm",])
+    hot <- nrow(polls_sub[polls_sub$args.category == "hot",])
+    at_venue <- nrow(polls_sub[polls_sub$args.category == "at_venue",])
     summary <- rbind(summary, data.frame(day = days[i], category = "cold", count = cold))
     summary <- rbind(summary, data.frame(day = days[i], category = "warm", count = warm))
     summary <- rbind(summary, data.frame(day = days[i], category = "hot", count = hot))
@@ -77,7 +78,7 @@ polls_per_day <- function(data, params, ...) {
     add_axis("x", title = "",
              properties = axis_props(labels = list(angle = 45, align = "left"))) %>%
     add_axis("y", title = "Polls") %>%
-    add_axis("x", orient = "top", ticks = 0, title = paste0("Participant: ", paste(unique(data$log.metadata.pt),collapse=",")),
+    add_axis("x", orient = "top", ticks = 0, title = paste0("Participant: ", paste(unique(data$log$metadata$pt),collapse=",")),
              properties = axis_props(
                axis = list(stroke = "white"),
                labels = list(fontSize = 0)))
