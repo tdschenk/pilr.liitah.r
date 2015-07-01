@@ -52,6 +52,7 @@ full_table <- function(data, params, ...) {
 ## Bar graph of hot/warm/cold polls per day for one participant
 #' @export
 polls_per_day <- function(data, params, ...) {
+  # Grab poll data
   polls <- data$log$data
   temp <- data.frame(day = substr(data$log$metadata$local_time, 0, 10))
   polls <- cbind(polls, temp)
