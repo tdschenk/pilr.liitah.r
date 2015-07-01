@@ -56,7 +56,6 @@ polls_per_day <- function(data, params, ...) {
   polls$day <- substr(data$log$metadata$local_time, 0, 10)
   polls <- polls[polls$tag == "POLLING_SERVICE_ANDROID", ]
   polls <- polls[polls$category != "", ]
-  stop(paste0("POLLS: ", nrow(polls), "  LOCAL: ", substr(data$log$metadata$local_time[1], 0, 10)))
   days <- unique(polls$day)
   
   # Count polls per day
