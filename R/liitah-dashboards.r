@@ -53,7 +53,7 @@ full_table <- function(data, params, ...) {
 #' @export
 polls_per_day <- function(data, params, ...) {
   polls <- data$log$data
-  polls$day <- substr(data$log$metadata$local_time, 0, 10)
+  polls$day <- substr(as.character(data$log$metadata$local_time), 0, 10)
   polls <- polls[polls$tag == "POLLING_SERVICE_ANDROID", ]
   polls <- polls[polls$category != "", ]
   days <- unique(polls$day)
