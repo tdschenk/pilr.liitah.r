@@ -63,10 +63,10 @@ polls_per_day <- function(data, params, ...) {
   summary <- data.frame(day = character(), category = character(), count = numeric())
   for (i in 1:length(days)) {
     polls_sub <- polls[polls$day == days[i], ]
-    cold <- nrow(polls_sub[polls_sub$category == "cold",])
-    warm <- nrow(polls_sub[polls_sub$category == "warm",])
-    hot <- nrow(polls_sub[polls_sub$category == "hot",])
-    at_venue <- nrow(polls_sub[polls_sub$category == "at_venue",])
+    cold <- nrow(polls_sub[polls_sub$args.category == "cold",])
+    warm <- nrow(polls_sub[polls_sub$args.category == "warm",])
+    hot <- nrow(polls_sub[polls_sub$args.category == "hot",])
+    at_venue <- nrow(polls_sub[polls_sub$args.category == "at_venue",])
     summary <- rbind(summary, data.frame(day = days[i], category = "cold", count = cold))
     summary <- rbind(summary, data.frame(day = days[i], category = "warm", count = warm))
     summary <- rbind(summary, data.frame(day = days[i], category = "hot", count = hot))
