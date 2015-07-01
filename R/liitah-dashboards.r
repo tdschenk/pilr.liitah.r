@@ -58,7 +58,7 @@ polls_per_day <- function(data, params, ...) {
   polls <- polls[polls$tag == "POLLING_SERVICE_ANDROID", ]
   polls <- polls[polls$category != "", ]
   days <- unique(polls$day)
-  
+  stop(paste0("nrow:",nrow(polls), "    unique:", days[1]))
   # Count polls per day
   summary <- data.frame(day = character(), category = character(), count = numeric())
   for (i in 1:length(days)) {
