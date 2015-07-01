@@ -54,6 +54,8 @@ full_table <- function(data, params, ...) {
 polls_per_day <- function(data, params, ...) {
   # Grab poll data
   polls <- data$log$data
+  polls <- flatten(polls)
+  stop(paste0(names(polls)))
   temp <- data.frame(day = substr(data$log$metadata$local_time, 0, 10))
   polls <- cbind(polls, temp)
   polls <- polls[polls$tag == "POLLING_SERVICE_ANDROID", ]
