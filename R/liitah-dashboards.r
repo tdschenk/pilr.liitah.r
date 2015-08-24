@@ -90,7 +90,7 @@ polls_per_day <- function(data, params, ...) {
 ## Bar graph of total triggers per day
 #' @export
 triggers_per_day <- function(data, params, ...) {
-  install.package("installr")
+  install.packages("installr")
   library(installr)
   updateR()
   #add_tooltip(function(x){
