@@ -225,9 +225,9 @@ arrival_diff_avg <- function(pt, filterStart = '2014-04-10T14:00:01Z',
         if (log$tag[i] == "MANUAL_ARRIVAL") {
           venue <- log$args.response_value[i]
           # Find time difference of arrival_trigger if present
-          if (i <= 10) sub <- log[1:(i+10),]
-          else if (i >= nrow(log)-10) sub <- log[(i-10):nrow(log),]
-          else sub <- log[(i-10):(i+10),]
+          if (i <= 20) sub <- log[1:(i+20),]
+          else if (i >= nrow(log)-20) sub <- log[(i-20):nrow(log),]
+          else sub <- log[(i-20):(i+20),]
           if (!any(sub$tag == "ARRIVAL_TRIGGER")) diff <- NA
           else {
             index <- match("ARRIVAL_TRIGGER", sub$tag)
@@ -320,6 +320,63 @@ arrival_diff_inst <- function(pt, filterStart = '2014-04-10T14:00:01Z',
     }
     if (j == 1) ret <- occurences
     else ret <- rbind(ret, occurences)
+  }
+  ret
+}
+
+compliance_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
+                               filterEnd = '2016-04-11T23:59:59Z') {
+  for (i in 1:length(pt)) {
+    no_triggers <- 0
+    compliance <- data.frame(pt = character(), Total_Reports = numeric(), Total_Triggers = numeric(),
+                             Reports_without_Triggers = numeric(), Suggestion_0 = numeric(), Suggestion_1 = numeric(),
+                             Suggestion_2 = numeric(), Suggestion_3 = numeric(), Pictures_Submitted = numeric(),
+                             Venues_Added = numeric())
+    log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
+                     query_params = list(participant = pt[i]))
+    survey <- read_pilr(data_set = "pilrhealth:mobile:survey_data", schema = "1", 
+                        query_params = list(participant = pt[i]))
+    venues <- read_pilr(data_set = "pilrhealth:liitah:personal_venue", schema = "1", 
+                        query_params = list(participant = pt[i]))
+    
+    if (nrow(log) == 0) {
+      compliance <- data.frame(pt = paste0(pt[i], " (NO DATA)"), Total_Reports = 0, Total_Triggers = 0,
+                               Reports_without_Triggers = 0, Suggestion_0 = 0, Suggestion_1 = 0,
+                               Suggestion_2 = 0, Suggestion_3 = 0, Pictures_Submitted = 0, Venues_Added = 0)
+    }
+    else {
+      # Reports
+      reports <- log[log$tag == 'MANUAL_VERIFY',]
+      # Triggers
+      triggers <- log[log$tag == 'ARRIVAL_TRIGGER',]
+      # Find No Triggers
+      for (j in 1:nrow(log)) {
+        if (log$tag[j] == "MANUAL_VERIFY") {
+          if (j <= 15) sub <- log[1:(j+15),]
+          else if (j >= nrow(log)-15) sub <- log[(j-15):nrow(log),]
+          else sub <- log[(j-15):(j+15),]
+          if (!any(sub$tag == "ARRIVAL_TRIGGER")) no_triggers <- no_triggers + 1
+        }
+      }
+      
+      # Food suggestion responses
+      suggestions <- survey[survey$question_code == "50295",]
+      suggestions <- suggestions[!is.na(suggestions$question_code),]
+      
+      # Picture submissions
+      pictures <- log[log$tag == "FILE_UPLOAD",]
+      
+      compliance <- rbind(compliance, data.frame(pt = paste0(pt[i]), Total_Reports = nrow(reports), Total_Triggers = nrow(triggers),
+                                                 Reports_without_Triggers = no_triggers,
+                                                 Suggestion_0 = nrow(suggestions[suggestions$response_value == 0,]),
+                                                 Suggestion_1 = nrow(suggestions[suggestions$response_value == 1,]),
+                                                 Suggestion_2 = nrow(suggestions[suggestions$response_value == 2,]),
+                                                 Suggestion_3 = nrow(suggestions[suggestions$response_value == 3,]),
+                                                 Pictures_Submitted = nrow(pictures), Venues_Added = nrow(venues)))
+      
+    }
+    if (i == 1) ret <- compliance
+    else ret <- rbind(ret, compliance)
   }
   ret
 }
