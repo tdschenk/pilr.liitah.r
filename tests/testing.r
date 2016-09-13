@@ -36,9 +36,13 @@ arrivals3 <- arrival_summary(601, filterStart = '2015-05-05T01:00:01Z',
 ## 992 & 993 throwing error
 options(pilr_server_default = "http://liitah.pilrhealth.com")
 options(pilr_project_default = "umich_study")
-options(pilr_default_access_code = "23a108a3-d48e-4b8d-bd03-fb7ef745e1f2")
+options(pilr_default_access_code = "6292f2f3-9a2b-434c-87e1-e4831b2e8843")
 
-df <- full_summary(c(101,102,103,104,105,106,107,108,109))
+df <- full_summary(c(101,102,103,104,105,106,107,108,109,2001,2002,2003,2004,2005,2006,2007,2008,3001,3002,3003,3005,3006))
+
+df1 <- full_summary(c(101,102,103,104,105,106,107,108,109))
+df2 <- full_summary(c(2001,2002,2003,2004,2005,2006,2007,2008))
+df3 <- full_summary(c(3001,3002,3003,3005,3006))
 grid.table(df[,1:6], cols = c("pt", "Total Venues", "Total Polls", "Total Triggers", "Polls At Venue", "Hot Polls"))
 grid.table(df[,7:11], cols = c("Warm Polls", "Cold Polls", "Last Venue Added", "Last Manual Arrival", "Total Manual Arrivals"))
 grid.table(df[,12], cols = c("Last Poll"))

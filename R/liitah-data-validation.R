@@ -1,13 +1,13 @@
 ## FUNCTION: Return complete summary with one row per participant
 #' @export
 full_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
-                         filterEnd = '2016-04-11T23:59:59Z') {
+                         filterEnd = '2017-04-11T23:59:59Z') {
   basic <- basic_summary(pt, filterStart = filterStart, filterEnd = filterEnd)
   arrivals <- arrival_table(pt, filterStart = filterStart, filterEnd = filterEnd)
   arrivals <- subset(arrivals, select = -c(pt))
   # Difference from manual arrival and trigger
   trigger_diff <- arrival_diff_avg(pt, filterStart = filterStart, filterEnd = filterEnd)
-  condensed <- arrival_condense(trigger_diff)
+  condensed <- arrival_condense(pt, diff = trigger_diff)
   condensed <- subset(condensed, select = -c(pt))
   # cbind all dataframes
   ret <- cbind(basic, arrivals, condensed)
@@ -18,7 +18,7 @@ full_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
 ## For each at_venue arrival, return if it came from cold, warm, or hot category
 #' @export
 arrival_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
-                            filterEnd = '2016-04-11T23:59:59Z') {
+                            filterEnd = '2017-04-11T23:59:59Z') {
   for (k in 1:length(pt)) {
     log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
                      query_params = list(participant = pt[k]))
@@ -66,7 +66,7 @@ arrival_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
 ## FUNCTION: Return percentages of arrival_summary
 #' @export
 arrival_table <- function(pt, filterStart = '2014-04-10T14:00:01Z',
-                          filterEnd = '2016-04-11T23:59:59Z') {
+                          filterEnd = '2017-04-11T23:59:59Z') {
   # For each participant entered summarize arrivals
   for (i in 1:length(pt)) {
     arrivals <- arrival_summary(pt[i], filterStart = filterStart, filterEnd = filterEnd)
@@ -158,7 +158,7 @@ basic_summary <- function(pt, filterStart = '2014-04-10T14:00:01Z',
 ## FUNCTION: Comparing locations in venues to training recs
 #' @export
 venue_diff <- function(pt, filterStart = '2014-04-10T14:00:01Z',
-                       filterEnd = '2016-04-11T23:59:59Z') {
+                       filterEnd = '2017-04-11T23:59:59Z') {
   # Read in data from PiLR API
   venues <- read_pilr(data_set = "pilrhealth:liitah:personal_venue", schema = "1", 
                       query_params = list(participant = pt))
@@ -206,7 +206,7 @@ venue_diff <- function(pt, filterStart = '2014-04-10T14:00:01Z',
 ## NA diff means no arrival_trigger detected near manual_arrival
 #' @export
 arrival_diff_avg <- function(pt, filterStart = '2014-04-10T14:00:01Z',
-                             filterEnd = '2016-04-11T23:59:59Z') {
+                             filterEnd = '2017-04-11T23:59:59Z') {
   for (j in 1:length(pt)) {
     # Read in data
     log <- read_pilr(data_set = "pilrhealth:mobile:app_log", schema = "1", 
@@ -263,15 +263,25 @@ arrival_diff_avg <- function(pt, filterStart = '2014-04-10T14:00:01Z',
 
 ## FUNCTION: Condense arrival_diff results into 1 row per participant for full summary
 #' @export
-arrival_condense <- function(diff) {
+arrival_condense <- function(pts, diff) {
   if (nrow(diff)) {
-    for (i in 1:length(unique(diff$pt))) {
-      sub <- subset(diff, pt == unique(diff$pt)[i])
-      avg <- mean(sub$avg_diff, na.rm=TRUE)
+    for (i in 1:length(pts)) {
+      sub <- subset(diff, pt == pts[i])
       tot <- sum(sub$no_triggers)
-      temp <- data.frame(pt = unique(diff$pt)[i], Average_Trigger_Diff = avg, No_Triggers = tot)
-      if (i == 1) ret <- temp
-      else ret <- rbind(ret, temp)
+      sub <- subset(sub, !is.na(avg_diff))
+      if (nrow(sub) > 0) {
+        avg <- mean(sub$avg_diff, na.rm=TRUE)
+        tot <- sum(sub$no_triggers)
+        temp <- data.frame(pt = pts[i], Average_Trigger_Diff = avg, No_Triggers = tot)
+        if (i == 1) ret <- temp
+        else ret <- rbind(ret, temp)
+      }
+      else {
+        temp <- data.frame(pt = pts[i], Average_Trigger_Diff = NA, No_Triggers = tot)
+        if (i == 1) ret <- temp
+        else ret <- rbind(ret, temp)
+      }
+      
     }
   }
   else {
